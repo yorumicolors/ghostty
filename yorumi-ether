@@ -1,0 +1,22 @@
+background = 02040e
+foreground = DEDFE5
+selection-background = 4D4F58
+selection-foreground = DEDFE5
+cursor-color = F1F1F4
+
+palette = 0=#02040e
+palette = 1=#BA3D31
+palette = 2=#6A8A56
+palette = 3=#a48237
+palette = 4=#435D95
+palette = 5=#A04A6C
+palette = 6=#2AA0A4
+palette = 7=#DEDFE5
+palette = 8=#4D4F58
+palette = 9=#F35B4B
+palette = 10=#AADB71
+palette = 11=#e3cb52
+palette = 12=#7088E5
+palette = 13=#DF7CAA
+palette = 14=#6DDBDD
+palette = 15=#F1F1F4
