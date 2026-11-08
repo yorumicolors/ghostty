@@ -3,9 +3,45 @@
 set -euo pipefail
 
 # ── flavour, target config, and whether to activate ────────────────────────
-FLAVOUR="ether"
+FLAVOUR=""
+FLAVOURS="ether abyss bifrost kraken kabocha cosmic ryujin"
 CONFIG=""
 ACTIVATE=1
+
+# No default flavour. Ask, or fail where nobody can answer.
+ask_flavour() {
+  # a real open, not a -r test: /dev/tty exists even when nothing is attached
+  if ! { exec 3<>/dev/tty; } 2>/dev/null; then
+    echo "no flavour given. pass --flavour <name>: $FLAVOURS" >&2
+    exit 2
+  fi
+  i=0
+  {
+    echo "Yorumi flavours:"
+    for f in $FLAVOURS; do i=$((i + 1)); echo "  $i) $f"; done
+  } >&3
+  while :; do
+    printf 'flavour (1-%s or a name): ' "$i" >&3
+    answer=""
+    IFS= read -r answer <&3 || {
+      exec 3>&-
+      echo "no flavour given. pass --flavour <name>: $FLAVOURS" >&2
+      exit 2
+    }
+    [ -z "$answer" ] && continue
+    case "$answer" in
+      *[!0-9]*) candidate="$answer" ;;
+      *) candidate=""
+         n=0
+         for f in $FLAVOURS; do n=$((n + 1)); [ "$n" -eq "$answer" ] && candidate="$f"; done ;;
+    esac
+    case " $FLAVOURS " in
+      *" $candidate "*) FLAVOUR="$candidate"; exec 3>&-; return 0 ;;
+    esac
+    printf 'not a flavour: %s\n' "$answer" >&3
+  done
+}
+
 DEFAULT_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
 
 while [ $# -gt 0 ]; do
@@ -15,16 +51,20 @@ while [ $# -gt 0 ]; do
     --no-activate) ACTIVATE=0; shift ;;
     -h|--help)
       echo "usage: ./install.sh [--flavour <name>] [--config <path>] [--no-activate]"
-      echo "flavours: ether abyss bifrost kraken kabocha cosmic ryujin"
+      echo "flavours: $FLAVOURS"
       exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-case " ether abyss bifrost kraken kabocha cosmic ryujin " in
-  *" $FLAVOUR "*) ;;
-  *) echo "unknown flavour '$FLAVOUR'. One of: ether abyss bifrost kraken kabocha cosmic ryujin" >&2; exit 2 ;;
-esac
+if [ -n "$FLAVOUR" ]; then
+  case " $FLAVOURS " in
+    *" $FLAVOUR "*) ;;
+    *) echo "unknown flavour '$FLAVOUR'. One of: $FLAVOURS" >&2; exit 2 ;;
+  esac
+fi
+
+[ -z "$FLAVOUR" ] && [ "$ACTIVATE" -eq 1 ] && ask_flavour
 
 
 DEST_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes"
