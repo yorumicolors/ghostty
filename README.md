@@ -38,24 +38,26 @@ Each preview shows the 16 ANSI slots the theme defines, then `bat` syntax highli
 Linux / macOS:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash -s -- --flavour kraken
+curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash
 ```
 
-From a checkout:
+Without `--flavour` it asks; to skip the question:
 
 ```sh
-./install.sh              # asks which flavour
+curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash -s -- --flavour kraken
 ```
 
 Seven fragments land in `~/.config/ghostty/themes/`; the `>>> yorumi >>>` block in `config` holds `theme = yorumi-<flavour>`.
 
 Ghostty ships for macOS and Linux only; on Windows, run it inside WSL.
 
-## Changing it
+## Changing flavour
 
 ```sh
-./install.sh --flavour bifrost
+curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash -s -- --flavour bifrost
 ```
+
+Drop `--flavour` to pick from the list again.
 
 ## Manual
 
@@ -81,7 +83,7 @@ When assisting a user with installing or configuring Yorumi for **Ghostty**, fol
 1. **Detect Target OS**:
    - macOS / Linux: target destination is `~/.config/ghostty/themes/`.
    - Windows: Ghostty has no native build. Use the macOS/Linux path inside WSL; do not install to an `%APPDATA%` path.
-2. **Install**: the command under `## Install`, or `./install.sh --flavour <name>` in a checkout.
+2. **Install**: the command under `## Install`; add `-s -- --flavour <name>` to skip the question.
 3. **Verify Configuration**:
    - Check config file `config` for the active theme setting:
      ```
