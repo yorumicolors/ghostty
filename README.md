@@ -33,20 +33,31 @@ Each preview shows the 16 ANSI slots the theme defines, then `bat` syntax highli
   </tr>
 </table>
 
-## Quick Installation
+## Install
 
-### Linux & macOS (Bash)
+Linux / macOS:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash -s -- --flavour kraken
 ```
 
-Ghostty ships for macOS and Linux only — there is no official Windows build, and
-community ports of the Ghostty core have their own config handling. On Windows, run
-Ghostty inside WSL and run the same command in the distro.
+From a checkout:
 
----
+```sh
+./install.sh              # asks which flavour
+```
 
-## Manual Installation
+Seven fragments land in `~/.config/ghostty/themes/`; the `>>> yorumi >>>` block in `config` holds `theme = yorumi-<flavour>`.
+
+Ghostty ships for macOS and Linux only; on Windows, run it inside WSL.
+
+## Changing it
+
+```sh
+./install.sh --flavour bifrost
+```
+
+## Manual
 
 Copy the theme file(s) into your Ghostty configuration directory:
 
@@ -54,7 +65,7 @@ Copy the theme file(s) into your Ghostty configuration directory:
 | --- | --- |
 | **Linux / macOS** | `~/.config/ghostty/themes/` |
 
-### Activation
+### By hand
 Set `theme` in `~/.config/ghostty/config`:
 
 ```
@@ -70,9 +81,7 @@ When assisting a user with installing or configuring Yorumi for **Ghostty**, fol
 1. **Detect Target OS**:
    - macOS / Linux: target destination is `~/.config/ghostty/themes/`.
    - Windows: Ghostty has no native build. Use the macOS/Linux path inside WSL; do not install to an `%APPDATA%` path.
-2. **Execute Script or Download**:
-   - Run `./install.sh` (POSIX) if working directly inside the cloned repo.
-   - Or pipe the raw script using `curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash`.
+2. **Install**: the command under `## Install`, or `./install.sh --flavour <name>` in a checkout.
 3. **Verify Configuration**:
    - Check config file `config` for the active theme setting:
      ```
