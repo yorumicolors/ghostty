@@ -21,6 +21,28 @@ Yorumi keeps visual noise low with mellow, low-contrast UI component backgrounds
 - `yorumi-cosmic`
 - `yorumi-ryujin`
 
+## Screenshots
+
+Each preview shows the 16 ANSI slots the theme defines, then `bat` syntax highlighting and prose on the same surface. Click a thumbnail for the full-resolution capture.
+
+<table>
+  <tr>
+    <td colspan="2" align="center"><a href="res/yorumi-bifrost.png"><img src="res/yorumi-bifrost.png" width="640" alt="yorumi bifrost"></a><br><code>yorumi-bifrost</code></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="res/yorumi-ether.png"><img src="res/yorumi-ether.png" width="420" alt="yorumi ether"></a><br><code>yorumi-ether</code></td>
+    <td align="center" width="50%"><a href="res/yorumi-abyss.png"><img src="res/yorumi-abyss.png" width="420" alt="yorumi abyss"></a><br><code>yorumi-abyss</code></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="res/yorumi-kraken.png"><img src="res/yorumi-kraken.png" width="420" alt="yorumi kraken"></a><br><code>yorumi-kraken</code></td>
+    <td align="center" width="50%"><a href="res/yorumi-kabocha.png"><img src="res/yorumi-kabocha.png" width="420" alt="yorumi kabocha"></a><br><code>yorumi-kabocha</code></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="res/yorumi-cosmic.png"><img src="res/yorumi-cosmic.png" width="420" alt="yorumi cosmic"></a><br><code>yorumi-cosmic</code></td>
+    <td align="center" width="50%"><a href="res/yorumi-ryujin.png"><img src="res/yorumi-ryujin.png" width="420" alt="yorumi ryujin"></a><br><code>yorumi-ryujin</code></td>
+  </tr>
+</table>
+
 ## Quick Installation
 
 ### Linux & macOS (Bash)
