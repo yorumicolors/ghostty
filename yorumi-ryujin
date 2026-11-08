@@ -1,0 +1,24 @@
+# yorumi ryujin — dark
+# install: ~/.config/ghostty/themes/yorumi-ryujin   then set   theme = yorumi-ryujin
+palette = 0=#0b0b19
+palette = 1=#de8280
+palette = 2=#a1b38c
+palette = 3=#cdb68c
+palette = 4=#7f8cbf
+palette = 5=#c9809f
+palette = 6=#96c3b8
+palette = 7=#bdbfcb
+palette = 8=#42608a
+palette = 9=#e2aeac
+palette = 10=#5be3b4
+palette = 11=#ffb86b
+palette = 12=#76b0ff
+palette = 13=#df8eff
+palette = 14=#c6dfec
+palette = 15=#afb9df
+background = #0b0b19
+foreground = #afb9df
+cursor-color = #afb9df
+cursor-text = #0b0b19
+selection-background = #76b0ff
+selection-foreground = #0b0b19

@@ -1,0 +1,24 @@
+# yorumi bifrost — light
+# install: ~/.config/ghostty/themes/yorumi-bifrost   then set   theme = yorumi-bifrost
+palette = 0=#191b25
+palette = 1=#4e0e0e
+palette = 2=#213828
+palette = 3=#4e3e0a
+palette = 4=#0d2c4e
+palette = 5=#4c1036
+palette = 6=#054951
+palette = 7=#a8aab5
+palette = 8=#4d4f58
+palette = 9=#913b3b
+palette = 10=#667c4b
+palette = 11=#9d672f
+palette = 12=#42608a
+palette = 13=#8d3f5a
+palette = 14=#49837e
+palette = 15=#ebedf1
+background = #ebedf1
+foreground = #191b25
+cursor-color = #191b25
+cursor-text = #ebedf1
+selection-background = #afb9df
+selection-foreground = #191b25

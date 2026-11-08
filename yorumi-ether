@@ -1,0 +1,24 @@
+# yorumi ether — dark
+# install: ~/.config/ghostty/themes/yorumi-ether   then set   theme = yorumi-ether
+palette = 0=#02040e
+palette = 1=#de8280
+palette = 2=#a1b38c
+palette = 3=#cdb68c
+palette = 4=#7f8cbf
+palette = 5=#c9809f
+palette = 6=#96c3b8
+palette = 7=#bdbfcb
+palette = 8=#4d4f58
+palette = 9=#ea7262
+palette = 10=#a9d07c
+palette = 11=#e4d278
+palette = 12=#798ddc
+palette = 13=#db8bae
+palette = 14=#85e0cb
+palette = 15=#ebedf1
+background = #02040e
+foreground = #ebedf1
+cursor-color = #ebedf1
+cursor-text = #02040e
+selection-background = #bdbfcb
+selection-foreground = #02040e

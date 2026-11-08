@@ -1,0 +1,24 @@
+# yorumi abyss — dark
+# install: ~/.config/ghostty/themes/yorumi-abyss   then set   theme = yorumi-abyss
+palette = 0=#060914
+palette = 1=#c65e53
+palette = 2=#80aa6e
+palette = 3=#ba9a5e
+palette = 4=#597bc0
+palette = 5=#b4647f
+palette = 6=#5caeac
+palette = 7=#9496a0
+palette = 8=#3e4049
+palette = 9=#f35b4b
+palette = 10=#aadb71
+palette = 11=#e3cb52
+palette = 12=#7088e5
+palette = 13=#df7caa
+palette = 14=#6ddbdd
+palette = 15=#bdbfcb
+background = #060914
+foreground = #bdbfcb
+cursor-color = #bdbfcb
+cursor-text = #060914
+selection-background = #6ddbdd
+selection-foreground = #060914

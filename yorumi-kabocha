@@ -1,0 +1,24 @@
+# yorumi kabocha — dark
+# install: ~/.config/ghostty/themes/yorumi-kabocha   then set   theme = yorumi-kabocha
+palette = 0=#150b03
+palette = 1=#c65e53
+palette = 2=#80aa6e
+palette = 3=#ba9a5e
+palette = 4=#597bc0
+palette = 5=#b4647f
+palette = 6=#5caeac
+palette = 7=#bdbfcb
+palette = 8=#5d3718
+palette = 9=#e2aeac
+palette = 10=#5be3b4
+palette = 11=#ffb86b
+palette = 12=#76b0ff
+palette = 13=#df8eff
+palette = 14=#c6dfec
+palette = 15=#f5c5b0
+background = #150b03
+foreground = #f5c5b0
+cursor-color = #f5c5b0
+cursor-text = #150b03
+selection-background = #ffb86b
+selection-foreground = #150b03

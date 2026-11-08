@@ -1,0 +1,24 @@
+# yorumi cosmic — dark
+# install: ~/.config/ghostty/themes/yorumi-cosmic   then set   theme = yorumi-cosmic
+palette = 0=#150718
+palette = 1=#ea7262
+palette = 2=#a9d07c
+palette = 3=#e4d278
+palette = 4=#798ddc
+palette = 5=#db8bae
+palette = 6=#85e0cb
+palette = 7=#bdbfcb
+palette = 8=#8d3f5a
+palette = 9=#e2aeac
+palette = 10=#d0dfbe
+palette = 11=#e2d8bb
+palette = 12=#afb9df
+palette = 13=#deb9d0
+palette = 14=#c6dfec
+palette = 15=#ffffff
+background = #150718
+foreground = #ffffff
+cursor-color = #ffffff
+cursor-text = #150718
+selection-background = #df7caa
+selection-foreground = #150718
