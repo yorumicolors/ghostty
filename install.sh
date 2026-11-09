@@ -8,11 +8,63 @@ FLAVOURS="ether abyss bifrost kraken kabocha cosmic ryujin"
 CONFIG=""
 ACTIVATE=1
 
-# replace $1 with $2 atomically, keeping the original file mode
+# Print the real file $1's bytes belong in, following any final-component
+# symlink chain. Plain readlink: -f is GNU, and this must also work on macOS
+# and in Git Bash. Nothing is written here, so a bad link leaves the file alone.
+resolve_config() {
+  local cfg="$1" link hops=0
+  while [ -L "$cfg" ]; do
+    hops=$((hops + 1))
+    if [ "$hops" -gt 40 ]; then
+      echo "yorumi: $1 is a symbolic link loop; configuration unchanged" >&2
+      return 1
+    fi
+    if ! link=$(readlink "$cfg"); then
+      echo "yorumi: cannot read the symbolic link $cfg; configuration unchanged" >&2
+      return 1
+    fi
+    case "$link" in
+      /*) cfg="$link" ;;
+      *) cfg="$(dirname "$cfg")/$link" ;;
+    esac
+  done
+  if [ "$hops" -gt 0 ] && [ ! -e "$cfg" ]; then
+    echo "yorumi: $1 points at $cfg, which does not exist; configuration unchanged" >&2
+    return 1
+  fi
+  printf '%s\n' "$cfg"
+}
+
+# replace $1 (already resolved) with $2 atomically: the temp is a safely named
+# sibling of the real file, so the rename never crosses a filesystem, and a
+# failed write leaves $1 exactly as it was. cp -p carries the mode, owner and
+# timestamps of an existing config onto the temp, as before.
 commit() {
-  tmp="$1.yorumi-tmp.$$"
-  if [ -e "$1" ]; then cp -p "$1" "$tmp"; else : > "$tmp"; fi
-  if cat "$2" > "$tmp"; then mv "$tmp" "$1"; else rm -f "$tmp"; return 1; fi
+  local tmp mode
+  # Fail closed before copying: cp -p would clone an immutable (uchg) or
+  # otherwise unwritable config's flags onto the temp, which could then be
+  # neither written nor removed. An append-open writes no bytes, and it only
+  # runs for a file that already exists.
+  if [ -e "$1" ] && ! : 2>/dev/null >> "$1"; then
+    echo "yorumi: $1 is not writable (read-only or protected); configuration unchanged" >&2
+    return 1
+  fi
+  if ! tmp=$(mktemp "$1.yorumi-tmp.XXXXXX"); then
+    echo "yorumi: cannot create a temporary file next to $1" >&2
+    return 1
+  fi
+  if [ -e "$1" ]; then
+    cp -p "$1" "$tmp" || { rm -f "$tmp"; return 1; }
+  else
+    # a fresh config keeps the mode a `: >` under this umask would have given it
+    mode=$(umask)
+    chmod "$(printf '%o' "$(( 0666 & ~0$mode ))")" "$tmp" || { rm -f "$tmp"; return 1; }
+  fi
+  if cat "$2" > "$tmp" && mv "$tmp" "$1"; then
+    return 0
+  fi
+  rm -f "$tmp"
+  return 1
 }
 
 # No default flavour. Ask, or fail where nobody can answer.
@@ -49,7 +101,21 @@ ask_flavour() {
   done
 }
 
-DEFAULT_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
+if [[ "${XDG_CONFIG_HOME:-}" = /* ]]; then
+  _YORUMI_XDG="$XDG_CONFIG_HOME"
+else
+  _YORUMI_XDG="$HOME/.config"
+fi
+_YORUMI_CANDS=("$_YORUMI_XDG/ghostty/config.ghostty" "$_YORUMI_XDG/ghostty/config")
+if [ "$(uname -s)" = "Darwin" ]; then
+  _YORUMI_CANDS+=("$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty" "$HOME/Library/Application Support/com.mitchellh.ghostty/config")
+fi
+_YORUMI_CFG=""
+for _c in "${_YORUMI_CANDS[@]}"; do
+  if [ -e "$_c" ]; then _YORUMI_CFG="$_c"; fi
+done
+[ -z "$_YORUMI_CFG" ] && _YORUMI_CFG="$_YORUMI_XDG/ghostty/config"
+DEFAULT_CONFIG="$_YORUMI_CFG"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,8 +144,9 @@ fi
 [ -z "$FLAVOUR" ] && [ "$ACTIVATE" -eq 1 ] && ask_flavour
 
 
-DEST_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes"
+DEST_DIR="$_YORUMI_XDG/ghostty/themes"
 mkdir -p "$DEST_DIR"
+DEST_DIR="$(cd "$DEST_DIR" && pwd -P)"
 
 RAW_BASE="https://raw.githubusercontent.com/yorumicolors/ghostty/main"
 FILES=("yorumi-ether" "yorumi-abyss" "yorumi-bifrost" "yorumi-kraken" "yorumi-kabocha" "yorumi-cosmic" "yorumi-ryujin")
@@ -111,15 +178,15 @@ for f in "${FILES[@]}"; do
   echo "✓ Installed: $target"
 done
 
-cat << 'INFO'
+cat << INFO
 
 Successfully installed the Yorumi files for Ghostty.
 
 Activate it — the block below is rewritten by every run, so switching flavour is
-just `./install.sh --flavour <name>`:
+just ./install.sh --flavour <name>:
 
     # >>> yorumi >>>
-    theme = yorumi-abyss
+    theme = yorumi-${FLAVOUR:-<flavour>}
     # <<< yorumi <<<
 INFO
 
@@ -129,17 +196,21 @@ END="# <<< yorumi <<<"
 
 write_block() {
   CONFIG="${CONFIG:-$DEFAULT_CONFIG}"
-  mkdir -p "$(dirname "$CONFIG")" || { echo "yorumi: cannot create $(dirname "$CONFIG")" >&2; exit 1; }
-  [ -e "$CONFIG" ] || : > "$CONFIG"
+  CONFIG_REAL=$(resolve_config "$CONFIG") || exit 1
+  mkdir -p "$(dirname "$CONFIG_REAL")" || { echo "yorumi: cannot create $(dirname "$CONFIG_REAL")" >&2; exit 1; }
 
   work=$(mktemp -d)
   trap 'rm -rf "$work"' EXIT
 
   # every comparison runs on a copy with the CRs stripped; the endings come
   # back on the way out, so a CRLF config is neither duplicated nor converted
-  tr -d '\r' < "$CONFIG" > "$work/in"
+  if [ -e "$CONFIG_REAL" ]; then
+    tr -d '\r' < "$CONFIG_REAL" > "$work/in"
+  else
+    : > "$work/in"
+  fi
   crlf=""
-  if [ -s "$CONFIG" ] && [ "$(wc -c < "$work/in")" -lt "$(wc -c < "$CONFIG")" ]; then
+  if [ -s "$CONFIG_REAL" ] && [ "$(wc -c < "$work/in")" -lt "$(wc -c < "$CONFIG_REAL")" ]; then
     crlf=1
   fi
 
@@ -215,9 +286,13 @@ YORUMI_BODY
     mv "$work/crlf" "$work/out"
   fi
 
-  if ! cmp -s "$CONFIG" "$work/out"; then
-    [ -e "$CONFIG.yorumi-backup" ] || [ ! -s "$CONFIG" ] || cp -p "$CONFIG" "$CONFIG.yorumi-backup"
-    if ! commit "$CONFIG" "$work/out"; then
+  if ! cmp -s "$CONFIG_REAL" "$work/out"; then
+    if [ -e "$CONFIG_REAL" ] && ! : 2>/dev/null >> "$CONFIG_REAL"; then
+      echo "yorumi: $CONFIG_REAL is not writable (read-only or protected); configuration unchanged" >&2
+      return 1
+    fi
+    [ -e "$CONFIG_REAL.yorumi-backup" ] || [ ! -s "$CONFIG_REAL" ] || cp -p "$CONFIG_REAL" "$CONFIG_REAL.yorumi-backup"
+    if ! commit "$CONFIG_REAL" "$work/out"; then
       echo "yorumi: could not write $CONFIG" >&2
       exit 1
     fi

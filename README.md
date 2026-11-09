@@ -47,7 +47,25 @@ Without `--flavour` it asks; to skip the question:
 curl -fsSL https://raw.githubusercontent.com/yorumicolors/ghostty/main/install.sh | bash -s -- --flavour kraken
 ```
 
-Seven fragments land in `~/.config/ghostty/themes/`; the `>>> yorumi >>>` block in `config` holds `theme = yorumi-<flavour>`.
+Seven fragments land in `${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/`; the `>>> yorumi >>>`
+block holds `theme = yorumi-<flavour>`.
+
+Ghostty on macOS reads a native config directory as well as the XDG one, so the installer edits
+whichever default config already exists — the last match in this order wins, and the XDG location
+is used when none exists:
+
+| order | config file |
+|---|---|
+| 1 | `$XDG_CONFIG_HOME/ghostty/config.ghostty` |
+| 2 | `$XDG_CONFIG_HOME/ghostty/config` |
+| 3 | `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty` (macOS) |
+| 4 | `~/Library/Application Support/com.mitchellh.ghostty/config` (macOS) |
+
+Because the *last* existing file wins, a native macOS config takes precedence over an XDG one, and
+`config` takes precedence over `config.ghostty` inside the same directory. The fragments stay in the
+XDG `themes/` directory either way — that is where Ghostty looks for the name in `theme =`. On Linux
+only rows 1 and 2 exist. `--config <path>` targets another file; `--no-activate` writes the fragments
+and leaves configs alone.
 
 Ghostty ships for macOS and Linux only; on Windows, run it inside WSL.
 
@@ -65,10 +83,14 @@ Copy the theme file(s) into your Ghostty configuration directory:
 
 | OS | Destination Path |
 | --- | --- |
-| **Linux / macOS** | `~/.config/ghostty/themes/` |
+| **Linux / macOS** | `${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/` |
+
+On macOS, `XDG_CONFIG_HOME` often points somewhere other than `~/.config`; the `themes/` directory
+follows it.
 
 ### By hand
-Set `theme` in `~/.config/ghostty/config`:
+Set `theme` in the Ghostty config the app actually reads — `$XDG_CONFIG_HOME/ghostty/config`, or
+`~/Library/Application Support/com.mitchellh.ghostty/config` on macOS:
 
 ```
 theme = yorumi-abyss
@@ -81,15 +103,17 @@ theme = yorumi-abyss
 When assisting a user with installing or configuring Yorumi for **Ghostty**, follow these deterministic steps:
 
 1. **Detect Target OS**:
-   - macOS / Linux: target destination is `~/.config/ghostty/themes/`.
+   - macOS / Linux: target destination is `${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/`.
    - Windows: Ghostty has no native build. Use the macOS/Linux path inside WSL; do not install to an `%APPDATA%` path.
 2. **Install**: the command under `## Install`; add `-s -- --flavour <name>` to skip the question.
 3. **Verify Configuration**:
-   - Check config file `config` for the active theme setting:
+   - Look for the config in the order above — the last existing one is the one edited; the XDG
+     `ghostty/config` is created when none exists.
+   - Check it for the active theme setting:
      ```
      theme = yorumi-abyss
      ```
-   - Ensure the theme filename matches what is in `~/.config/ghostty/themes/`.
+   - Ensure the theme filename matches what is in `${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/`.
 
 ---
 
