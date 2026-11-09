@@ -8,6 +8,13 @@ FLAVOURS="ether abyss bifrost kraken kabocha cosmic ryujin"
 CONFIG=""
 ACTIVATE=1
 
+# replace $1 with $2 atomically, keeping the original file mode
+commit() {
+  tmp="$1.yorumi-tmp.$$"
+  if [ -e "$1" ]; then cp -p "$1" "$tmp"; else : > "$tmp"; fi
+  if cat "$2" > "$tmp"; then mv "$tmp" "$1"; else rm -f "$tmp"; return 1; fi
+}
+
 # No default flavour. Ask, or fail where nobody can answer.
 ask_flavour() {
   # a real open, not a -r test: /dev/tty exists even when nothing is attached
@@ -46,8 +53,12 @@ DEFAULT_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --flavour|-f)  FLAVOUR="${2:-}"; shift 2 ;;
-    --config|-c)   CONFIG="${2:-}";  shift 2 ;;
+    --flavour|-f)
+      [ -n "${2:-}" ] || { echo "--flavour needs a flavour name. One of: $FLAVOURS" >&2; exit 2; }
+      FLAVOUR="$2"; shift 2 ;;
+    --config|-c)
+      [ -n "${2:-}" ] || { echo "--config needs a path" >&2; exit 2; }
+      CONFIG="$2"; shift 2 ;;
     --no-activate) ACTIVATE=0; shift ;;
     -h|--help)
       echo "usage: ./install.sh [--flavour <name>] [--config <path>] [--no-activate]"
@@ -88,7 +99,14 @@ for f in "${FILES[@]}"; do
   elif [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/$basename_f" ]]; then
     cp "$SCRIPT_DIR/$basename_f" "$target"
   else
-    curl -fsSL "$RAW_BASE/$f" -o "$target"
+    part="$DEST_DIR/$basename_f.part.$$"
+    if ! curl -fsSL "$RAW_BASE/$f" -o "$part"; then
+      rm -f "$part"
+      echo "yorumi: could not download $f from $RAW_BASE" >&2
+      echo "yorumi: if that repository is not public yet, clone it and run ./install.sh from the checkout." >&2
+      exit 3
+    fi
+    mv "$part" "$target"
   fi
   echo "✓ Installed: $target"
 done
@@ -111,38 +129,98 @@ END="# <<< yorumi <<<"
 
 write_block() {
   CONFIG="${CONFIG:-$DEFAULT_CONFIG}"
-  mkdir -p "$(dirname "$CONFIG")"
+  mkdir -p "$(dirname "$CONFIG")" || { echo "yorumi: cannot create $(dirname "$CONFIG")" >&2; exit 1; }
   [ -e "$CONFIG" ] || : > "$CONFIG"
 
-  begins=$(grep -c -x -F -e "$BEGIN" "$CONFIG" || true)
-  ends=$(grep -c -x -F -e "$END" "$CONFIG" || true)
-  if [ "$begins" != "$ends" ]; then
+  work=$(mktemp -d)
+  trap 'rm -rf "$work"' EXIT
+
+  # every comparison runs on a copy with the CRs stripped; the endings come
+  # back on the way out, so a CRLF config is neither duplicated nor converted
+  tr -d '\r' < "$CONFIG" > "$work/in"
+  crlf=""
+  if [ -s "$CONFIG" ] && [ "$(wc -c < "$work/in")" -lt "$(wc -c < "$CONFIG")" ]; then
+    crlf=1
+  fi
+
+  # markers are counted on trimmed lines: an indented block still pairs, and
+  # an END before its BEGIN counts as broken
+  counts=$(awk -v b="$BEGIN" -v e="$END" '
+    function trim(x) { sub(/^[ \t]+/, "", x); sub(/[ \t]+$/, "", x); return x }
+    { t = trim($0)
+      if (t == b) { nb++; depth++ }
+      else if (t == e) { ne++; if (depth > 0) depth--; else bad = 1 }
+    }
+    END { printf "%d %d %d\n", nb + 0, ne + 0, bad + 0 }' "$work/in")
+  begins=${counts%% *}
+  rest=${counts#* }
+  ends=${rest%% *}
+  order=${rest#* }
+  if [ "$begins" != "$ends" ] || [ "$order" != 0 ]; then
     echo "yorumi: $CONFIG has $begins '$BEGIN' and $ends '$END' markers." >&2
     echo "yorumi: the config was not touched; fix or delete those lines, then run this again." >&2
     exit 1
   fi
 
-  work=$(mktemp -d)
-  trap 'rm -rf "$work"' EXIT
-
-  cat > "$work/block" <<YORUMI_BLOCK
-$BEGIN
+  cat > "$work/body" <<YORUMI_BODY
 theme = yorumi-$FLAVOUR
-$END
-YORUMI_BLOCK
+YORUMI_BODY
 
-  if grep -q -x -F -e "$BEGIN" "$CONFIG"; then
-    awk -v b="$BEGIN" -v e="$END" -v bf="$work/block" '
-      $0 == b { if (!done) { while ((getline line < bf) > 0) print line; close(bf); done = 1 } inside = 1; next }
-      $0 == e { inside = 0; next }
-      inside == 0 { print }' "$CONFIG" > "$work/out"
-  else
-    { cat "$CONFIG"; [ -s "$CONFIG" ] && printf '\n'; cat "$work/block"; } > "$work/out"
+  # the block is ours alone: it is taken out wherever it sits and written back
+  # where the app reads it last, so nothing after it can shadow it and a second
+  # copy cannot survive a flavour switch
+  awk -v b="$BEGIN" -v e="$END" -v bf="$work/body" -v mode="end" '
+    function trim(x) { sub(/^[ \t]+/, "", x); sub(/[ \t]+$/, "", x); return x }
+    function emit(   line) {
+      print b
+      while ((getline line < bf) > 0) print line
+      close(bf); print e
+    }
+    { L[NR] = $0 }
+    END {
+      n = NR
+
+      # 1. drop every copy of our block, and the blank line we put after it,
+      #    so a rerun cannot grow the file by one blank per run
+      m = 0; inside = 0; skipblank = 0
+      for (i = 1; i <= n; i++) {
+        t = trim(L[i])
+        if (t == b) { inside = 1; continue }
+        if (inside && t == e) { inside = 0; skipblank = 1; continue }
+        if (inside) continue
+        if (skipblank && t == "") { skipblank = 0; continue }
+        skipblank = 0
+        m++; K[m] = L[i]
+      }
+      n = m
+
+      # 2. where the app reads it last: the end of the file, or — in a Lua
+      #    config — immediately above the returned table
+      pos = n + 1
+      if (mode == "lua") {
+        for (i = n; i >= 1; i--) if (K[i] ~ /^return[ \t(]/) { pos = i; break }
+      }
+
+      # 3. write it
+      for (i = 1; i < pos; i++) print K[i]
+      if (pos > 1 && trim(K[pos - 1]) != "") print ""
+      emit()
+      if (pos <= n) print ""
+      for (i = pos; i <= n; i++) print K[i]
+    }
+  ' "$work/in" > "$work/out"
+
+  if [ -n "$crlf" ]; then
+    awk -v cr="$(printf '\r')" '{ printf "%s%s\n", $0, cr }' "$work/out" > "$work/crlf"
+    mv "$work/crlf" "$work/out"
   fi
 
   if ! cmp -s "$CONFIG" "$work/out"; then
-    [ -e "$CONFIG.yorumi-backup" ] || cp "$CONFIG" "$CONFIG.yorumi-backup"
-    cp "$work/out" "$CONFIG"
+    [ -e "$CONFIG.yorumi-backup" ] || [ ! -s "$CONFIG" ] || cp -p "$CONFIG" "$CONFIG.yorumi-backup"
+    if ! commit "$CONFIG" "$work/out"; then
+      echo "yorumi: could not write $CONFIG" >&2
+      exit 1
+    fi
     echo "✓ Block written to $CONFIG ($FLAVOUR)"
   else
     echo "✓ Block already current in $CONFIG ($FLAVOUR)"
